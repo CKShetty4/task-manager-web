@@ -53,7 +53,11 @@ app.post('/lists', (req, res) => {
  */
 app.patch('/lists/:id', (req, res) => {
     // We want to update the specified list (list document with id in the URL) with the new values specified in the JSON body of the request
-    
+    List.findOneAndUpdate({ _id: req.params.id }, {
+        $set: req.body
+    }).then(() => {
+        res.sendStatus(200);
+    });
 });
 
 /**
@@ -61,9 +65,21 @@ app.patch('/lists/:id', (req, res) => {
  * Purpose: Delete a list
  */
 app.delete('/lists/:id', (req, res) => {
-    // We want to delete the specified list (document with id in the URL)
-    
+    // Delete the specified list (document with id in the URL)
+    List.findOneAndDelete({ _id: req.params.id })
+        .then((removedListDoc) => {
+            if (removedListDoc) {
+                res.status(200).send(removedListDoc); // Successfully deleted
+            } else {
+                res.status(404).send({ error: "List not found." }); // No document found
+            }
+        })
+        .catch((err) => {
+            console.error("Error deleting list:", err);
+            res.status(500).send({ error: "An error occurred while deleting the list." });
+        });
 });
+
 
 app.listen(3000, () => {
     console.log('Server is running on port 3000');
