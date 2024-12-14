@@ -1,24 +1,30 @@
 import { Component, OnInit } from '@angular/core';
-import { TaskService } from '../../task.service';
+import { TaskService } from '../..//task.service';
+import { ActivatedRoute, Params, Router } from '@angular/router';
 
 @Component({
   selector: 'app-task-view',
-  imports: [],
   templateUrl: './task-view.component.html',
-  styleUrl: './task-view.component.scss'
+  styleUrls: ['./task-view.component.scss']
 })
-export class TaskViewComponent {
-  
-  constructor(private taskService: TaskService) { }
+export class TaskViewComponent implements OnInit {
+
+  lists: any;
+
+
+  constructor(private taskService: TaskService, private route: ActivatedRoute, private router: Router) { }
 
   ngOnInit() {
-  }
+    this.route.params.subscribe(
+      (params: Params) => {
+       console.log(params);
+      }
+    )
 
-  createNewList() {
-    this.taskService.createList('New List').subscribe((response:any)=>{
-      console.log(response);
-    }
-      );
+    this.taskService.getLists().subscribe((lists: any) => {
+      this.lists = lists;
+    })
+    
   }
 
 }
