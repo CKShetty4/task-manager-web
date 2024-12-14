@@ -1,4 +1,4 @@
-@import '../../../main-styles.scss';
+@use '../../../main-styles.scss' as *;
 
 .centered-content {
     display: flex;
