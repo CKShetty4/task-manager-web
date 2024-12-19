@@ -7,7 +7,7 @@
     <input #listTitleInput class="input has-text-black has-background-light is-medium" type="text" placeholder="Enter list name...">
     <br><br>
     <div class="buttons is-right">
-      <button class="button is-medium has-background-light has-text-black" routerLink="/">Cancel</button>
+      <button class="button is-medium has-background-light has-text-black" (click)="navigateToHome()">Cancel</button>
       <button class="button is-primary has-text-white is-medium" (click)="createList(listTitleInput.value)">Create</button>
     </div>
 
