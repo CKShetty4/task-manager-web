@@ -20,13 +20,14 @@
                 Tasks
             </h1>
             <div class="list-menu">
-                <div 
-                    class="task" 
-                    *ngFor="let task of tasks" 
-                >
+                <div class="task" *ngFor="let task of tasks">
                     <p>{{ task.title }}</p>
+                    
                 </div>
             </div>
+            <button routerLink="./new-task" class="circle-add-button button is-primary">
+                <img src="https://via.placeholder.com/50" alt="Placeholder Image" />
+            </button>
         </div>
     </div>
 </div>
