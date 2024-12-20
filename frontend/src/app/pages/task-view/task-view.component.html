@@ -24,7 +24,7 @@
                     <p>{{ task.title }}</p>
                 </div>
             </div>
-            <button routerLink="./new-task" class="circle-add-button button is-primary">
+            <button routerLink="./new-task" class="circle-add-button button is-primary" *ngFor="let list of lists" (click)="navigateToTask(list._id)">
                 <img src="../../../assets/plus-icon.png" alt="Add Task" />
             </button>
         </div>

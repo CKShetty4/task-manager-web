@@ -44,6 +44,9 @@ export class TaskViewComponent implements OnInit {
   navigateToList(listId: string) {
     this.router.navigate(['/lists', listId]);
   }
+  navigateToTask(listId: string) {
+    this.router.navigate(['/lists', listId, 'new-task']);
+  }
 
   navigateToNewList() {
     this.router.navigate(['/new-list']); // Navigate to the new list page
