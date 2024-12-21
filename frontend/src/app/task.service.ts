@@ -26,4 +26,10 @@ export class TaskService {
     // We want to send a web request to create a task
     return this.webReqService.post(`lists/${listId}/tasks`, { title });
   }
+
+  complete(task: any) {
+    return this.webReqService.patch(`lists/${task._listId}/tasks/${task._id}`, {
+      completed: !task.completed
+    });
+  }
 }

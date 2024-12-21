@@ -53,8 +53,12 @@ export class TaskViewComponent implements OnInit {
   }
 
   onTaskClick(task: any) {
-    // Example action: Navigate to a task detail view
-    this.router.navigate(['/tasks', task._id]); // Assuming you have a route for task details
+    // we want to set the task to completed
+    this.taskService.complete(task).subscribe(() => {
+      // the task has been set to completed successfully
+      console.log("Completed successully!");
+      task.completed = !task.completed;
+    })
   }
 
   isActive(listId: string): boolean {

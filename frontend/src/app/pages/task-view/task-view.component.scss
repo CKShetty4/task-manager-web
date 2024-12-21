@@ -98,7 +98,7 @@
         }
     }
 
-    &.complete {
+    &.completed {
         text-decoration: line-through;
         opacity: 0.7;
     }
@@ -111,5 +111,14 @@
     height: 50px;
     width: 50px;
     border-radius: 50%;
-    
+    text-decoration-color: antiquewhite;
+}
+.textbutton{
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    line-height: 50px;
+    cursor: pointer;
+    text-decoration-color: antiquewhite;
 }
