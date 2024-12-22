@@ -85,7 +85,7 @@
     align-items: center;
     width: 100%; // Ensure it takes full width of the parent
 
-    &:not(.complete) {
+    &:not(.completed) {
         cursor: pointer;
         transition: box-shadow 0.2s ease, transform 0.2s ease;
 
@@ -121,4 +121,10 @@
     line-height: 50px;
     cursor: pointer;
     text-decoration-color: antiquewhite;
+}
+
+.empty-state-text {
+    font-size: 20px;
+    color: #777;
+    text-align: center;
 }
