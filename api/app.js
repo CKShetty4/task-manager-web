@@ -27,20 +27,19 @@ app.use(function (req, res, next) {
 // check whether the request has a valid JWT access token
 let authenticate = (req, res, next) => {
     let token = req.header('x-access-token');
+    console.log("Received token:", token); // Log the received token
 
     // verify the JWT
     jwt.verify(token, User.getJWTSecret(), (err, decoded) => {
         if (err) {
-            // there was an error
-            // jwt is invalid - * DO NOT AUTHENTICATE *
+            console.error("JWT verification error:", err);
             res.status(401).send(err);
         } else {
-            // jwt is valid
-            req.user_id = decoded._id;
+            req.user_id = decoded._id; // Set user ID from token
             next();
         }
     });
-}
+};
 
 // Verify Refresh Token Middleware (which will be verifying the session)
 let verifySession = (req, res, next) => {
@@ -125,18 +124,21 @@ app.get('/lists', authenticate, (req, res) => {
  * Purpose: Create a list
  */
 app.post('/lists', authenticate, (req, res) => {
-    // We want to create a new list and return the new list document back to the user (which includes the id)
-    // The list information (fields) will be passed in via the JSON request body
     let title = req.body.title;
 
     let newList = new List({
         title,
-        _userId: req.user_id
+        _userId: req.user_id // Ensure this is set correctly
     });
-    newList.save().then((listDoc) => {
-        // the full list document is returned (incl. id)
-        res.send(listDoc);
-    })
+
+    newList.save()
+        .then((listDoc) => {
+            res.send(listDoc);
+        })
+        .catch((e) => {
+            console.error("Error saving list:", e);
+            res.status(400).send(e); // Send a 400 error response
+        });
 });
 
 /**

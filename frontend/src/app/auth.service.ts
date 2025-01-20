@@ -28,16 +28,22 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
+  private isBrowser() {
+    return typeof window !== 'undefined'; 
+  }
+
   getAccessToken() {
-    return localStorage.getItem('x-access-token');
+    const token = this.isBrowser() ? localStorage.getItem('x-access-token') : null;
+    console.log("Retrieved Access Token:", token); 
+    return token;
   }
 
   getRefreshToken() {
-    return localStorage.getItem('x-refresh-token') || '';
+    return this.isBrowser() ? localStorage.getItem('x-refresh-token') || '' : '';
   }
 
-  getUserId() {
-    return localStorage.getItem('user-id');
+  getUserId(): string | null {
+    return this.isBrowser() ? localStorage.getItem('user-id') : null;
   }
 
   setAccessToken(accessToken: string) {
@@ -64,7 +70,7 @@ export class AuthService {
       observe: 'response'
     }).pipe(
       tap((res: HttpResponse<any>) => {
-        this.setAccessToken(res.headers.get('x-access-token')!);
+        this.setAccessToken(res.headers.get('x-access-token')!);  
       })
     )
   }
