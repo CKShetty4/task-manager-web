@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-
+import { environment } from '../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
@@ -9,7 +9,7 @@ export class WebRequestService {
   readonly ROOT_URL;
 
   constructor(private http: HttpClient) {
-    this.ROOT_URL = 'http://localhost:3000';
+    this.ROOT_URL = environment.ROOT_URL;
   }
 
   get(uri: string, options?: { headers?: HttpHeaders }) {
