@@ -22,6 +22,7 @@ export class TaskViewComponent implements OnInit {
     this.route.params.subscribe((params: Params) => {
       this.currentListId = params['listId'] || null; // Set currentListId based on route params
       if (this.currentListId) {
+        this.selectedListId = this.currentListId;
         this.taskService.getTasks(this.currentListId).subscribe(
           (tasks: any) => {
             this.tasks = tasks;
@@ -61,7 +62,6 @@ export class TaskViewComponent implements OnInit {
   }
 
   isActive(listId: string): boolean {
-    this.selectedListId = listId;
     return this.router.url.includes(listId);
   }
   onDeleteListClick() {
@@ -71,5 +71,8 @@ export class TaskViewComponent implements OnInit {
     })
   }
 
- 
+  onEditListClick() {
+    this.router.navigate(['/edit-list', this.selectedListId]);
+  }
+
 }
