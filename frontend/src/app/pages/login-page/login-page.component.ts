@@ -25,4 +25,7 @@ export class LoginPageComponent {
       
     });
   }
+  onSignupClicked() {
+    this.router.navigate(['/signup']);
+  }
 }
