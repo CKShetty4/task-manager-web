@@ -14,6 +14,7 @@ export class TaskViewComponent implements OnInit {
   lists: any[] = [];
   tasks: any[] = [];
   currentListId: string | null = null; // Track the current list ID
+  selectedListId: string = '';
 
   constructor(private taskService: TaskService, private route: ActivatedRoute, private router: Router) { }
 
@@ -40,6 +41,7 @@ export class TaskViewComponent implements OnInit {
   }
 
   navigateToList(listId: string) {
+    this.selectedListId = listId;
     this.router.navigate(['/lists', listId]);
   }
 
@@ -59,6 +61,15 @@ export class TaskViewComponent implements OnInit {
   }
 
   isActive(listId: string): boolean {
+    this.selectedListId = listId;
     return this.router.url.includes(listId);
   }
+  onDeleteListClick() {
+    this.taskService.deleteList(this.selectedListId).subscribe((res: any) => {
+      this.router.navigate(['/lists']);
+      console.log(res);
+    })
+  }
+
+ 
 }

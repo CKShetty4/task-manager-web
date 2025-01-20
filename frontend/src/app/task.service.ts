@@ -176,7 +176,9 @@ export class TaskService {
     const headers = new HttpHeaders({
       'x-access-token': accessToken || '' // Set the access token in the headers
     });
-    return this.webReqService.get('lists', { headers }).pipe(
+    return this.webReqService.patch(`lists/${task._listId}/tasks/${task._id}`, {
+      completed: !task.completed
+    }, { headers: headers }).pipe(
       catchError((error: HttpErrorResponse) => {
         if (error.status === 401) {
           // 401 error, attempt to refresh the access token
@@ -208,4 +210,52 @@ export class TaskService {
       })
     );
   }
+ 
+
+  deleteList(id: string) {
+    console.log("Attempting to delete list with ID:", id); // Log the ID
+    const accessToken = this.authService.getAccessToken(); // Get the access token
+    const headers = new HttpHeaders({
+        'x-access-token': accessToken || '', // Set the access token in the headers
+        '_userId': this.authService.getUserId() || ''
+    });
+
+    const url = `lists/${id}`;
+    console.log("Full URL:", url); // Log the full URL
+    console.log("Headers being sent:", headers); // Log the headers
+
+    return this.webReqService.delete(url, { headers: headers }).pipe(
+        tap(response => {
+            console.log("Delete response:", response); // Log the response
+        }),
+        catchError((error: HttpErrorResponse) => {
+            console.error("Error deleting list:", error);
+            if (error.status === 401) {
+                // 401 error, attempt to refresh the access token
+                return this.refreshAccessToken().pipe(
+                    switchMap(() => {
+                        const newAccessToken = this.authService.getAccessToken();
+                        const newHeaders = new HttpHeaders({
+                            'x-access-token': newAccessToken || '',
+                            '_userId': this.authService.getUserId() || ''
+                        });
+                        return this.webReqService.delete(url, { headers: newHeaders }).pipe(
+                            catchError((err) => {
+                                console.log("Error retrying request after token refresh:", err);
+                                this.authService.logout(); // Log the user out if refresh fails
+                                return throwError(err); // Propagate the error
+                            })
+                        );
+                    }),
+                    catchError((err) => {
+                        console.log("Error refreshing token:", err);
+                        this.authService.logout(); // Log the user out if refresh fails
+                        return throwError(err); // Propagate the error
+                    })
+                );
+            }
+            return throwError(error); // Propagate other errors
+        })
+    );
+}
 }
