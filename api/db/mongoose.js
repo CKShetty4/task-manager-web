@@ -1,10 +1,12 @@
 const mongoose = require('mongoose');
 
-mongoose.Promise = global.Promise;
+require('dotenv').config();
 
-mongoose.connect('mongodb://localhost:27017/TaskManager')
+const uri = process.env.MONGODB_URI ;
+
+mongoose.connect(uri)
     .then(() => {
-        console.log("Connected to MongoDB successfully :)");
+        console.log("Connected to MongoDB Atlas successfully :)");
     })
     .catch((e) => {
         console.error("Error while attempting to connect to MongoDB:", e);
