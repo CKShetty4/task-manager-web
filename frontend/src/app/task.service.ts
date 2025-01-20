@@ -1,370 +1,130 @@
 import { Injectable } from '@angular/core';
 import { WebRequestService } from './web-request.service';
-import { AuthService } from './auth.service'; // Import AuthService
+import { AuthService } from './auth.service';
 import { HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { catchError, switchMap,  tap, map } from 'rxjs/operators';
-import { throwError,Subject, Observable } from 'rxjs';
+import { catchError, switchMap, tap, map, Observable, throwError, Subject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TaskService {
-
-  constructor(private webReqService: WebRequestService, private authService: AuthService) { }
-
   private refreshingAccessToken: boolean = false;
   private accessTokenRefreshed: Subject<void> = new Subject();
 
-  createList(title: string) {
-    const accessToken = this.authService.getAccessToken(); // Get the access token
-    const userId = this.authService.getUserId(); // Get the user ID
-    const headers = new HttpHeaders({
-      'x-access-token': accessToken || '' // Set the access token in the headers
+  constructor(private webReqService: WebRequestService, private authService: AuthService) {}
+
+  private getHeaders(): HttpHeaders {
+    const accessToken = this.authService.getAccessToken();
+    return new HttpHeaders({
+      'x-access-token': accessToken || '',
+      '_userId': this.authService.getUserId() || ''
     });
-    console.log("Creating list with title:", title);
-    console.log("User  ID:", userId);
-    console.log("Access Token:", accessToken);
-    // Include the userId in the request body
-    return this.webReqService.post('lists', { title, _userId: userId }, { headers: headers }).pipe(
-      catchError((error: HttpErrorResponse) => {
-        console.error("Error creating list:", error);
-        return throwError(error); // Propagate the error
-      })
-    );
   }
 
-  getLists() {
-    const accessToken = this.authService.getAccessToken(); // Get the access token
-    const headers = new HttpHeaders({
-      'x-access-token': accessToken || '' // Set the access token in the headers
-    });
-
-    return this.webReqService.get('lists', { headers }).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
-          // 401 error, attempt to refresh the access token
-          return this.refreshAccessToken().pipe(
-            switchMap(() => {
-              // Retry the original request with the new access token
-              const newAccessToken = this.authService.getAccessToken();
-              const newHeaders = new HttpHeaders({
-                'x-access-token': newAccessToken || ''
-              });
-              return this.webReqService.get('lists', { headers: newHeaders }).pipe(
-                catchError((err) => {
-                  console.log("Error retrying request after token refresh:", err);
-                  this.authService.logout(); // Log the user out if refresh fails
-                  return throwError(err); // Propagate the error
-                })
-              );
-            }),
-            catchError((err) => {
-              console.log("Error refreshing token:", err);
-              this.authService.logout(); // Log the user out if refresh fails
-              return throwError(err); // Propagate the error
-            })
-          );
-        }
-        return throwError(error); // Propagate other errors
-      })
-    );
+  private handleError<T>(operation: string, requestFn: () => Observable<T>): (error: HttpErrorResponse) => Observable<T> {
+    return (error: HttpErrorResponse) => {
+      if (error.status === 401) {
+        return this.refreshAccessToken().pipe(
+          switchMap(() => requestFn()),
+          catchError(err => {
+            console.error(`${operation} failed after refreshing token:`, err);
+            this.authService.logout();
+            return throwError(err);
+          })
+        );
+      }
+      console.error(`${operation} failed:`, error);
+      return throwError(error);
+    };
   }
 
-  refreshAccessToken(): Observable<void> {
+  private refreshAccessToken(): Observable<void> {
     if (this.refreshingAccessToken) {
-      return new Observable((observer) => {
-        this.accessTokenRefreshed.subscribe(() => {
-          // this code will run when the access token has been refreshed
-          observer.next();
-          observer.complete();
+        return new Observable(observer => {
+            this.accessTokenRefreshed.subscribe(() => {
+                observer.next();
+                observer.complete();
+            });
         });
-      });
     } else {
-      this.refreshingAccessToken = true;
-      // we want to call a method in the auth service to send a request to refresh the access token
-      return this.authService.getNewAccessToken().pipe(
-        map(() => void 0),
-        tap(() => {
-          console.log("Access Token Refreshed!");
-          this.refreshingAccessToken = false;
-          this.accessTokenRefreshed.next(); // Notify that the token has been refreshed
-        }),
-        catchError((err) => {
-          console.log("Failed to refresh access token:", err);
-          this.refreshingAccessToken = false; // Reset the flag
-          this.authService.logout(); // Log the user out if refresh fails
-          return throwError(err); // Propagate the error
-        })
-      );
+        this.refreshingAccessToken = true;
+        return this.authService.getNewAccessToken().pipe(
+            tap(() => {
+                console.log("Access Token Refreshed!");
+                this.refreshingAccessToken = false;
+                this.accessTokenRefreshed.next();
+            }),
+            map(() => void 0), // Transform the emitted value to void
+            catchError(err => {
+                console.log("Failed to refresh access token:", err);
+                this.refreshingAccessToken = false;
+                this.authService.logout();
+                return throwError(err);
+            })
+        );
     }
-  }
+}
 
-  getTasks(listId: string) {
-    const accessToken = this.authService.getAccessToken(); // Get the access token
-    const headers = new HttpHeaders({
-      'x-access-token': accessToken || '' // Set the access token in the headers
-    });
-    return this.webReqService.get(`lists/${listId}/tasks`, { headers: headers }).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
-          // 401 error, attempt to refresh the access token
-          return this.refreshAccessToken().pipe(
-            switchMap(() => {
-              // Retry the original request with the new access token
-              const newAccessToken = this.authService.getAccessToken();
-              const newHeaders = new HttpHeaders({
-                'x-access-token': newAccessToken || ''
-              });
-              return this.webReqService.get(`lists/${listId}/tasks`, { headers: headers }).pipe(
-                catchError((err) => {
-                  console.log("Error retrying request after token refresh:", err);
-                  this.authService.logout(); // Log the user out if refresh fails
-                  return throwError(err); // Propagate the error
-                })
-              );
-            }),
-            catchError((err) => {
-              console.log("Error refreshing token:", err);
-              this.authService.logout(); // Log the user out if refresh fails
-              return throwError(err); // Propagate the error
-            })
-          );
-        }
-        return throwError(error); // Propagate other errors
-      })
+  createList(title: string): Observable<any> {
+    const headers = this.getHeaders();
+    return this.webReqService.post('lists', { title }, { headers }).pipe(
+      catchError(this.handleError('createList', () => this.createList(title)))
     );
   }
 
-  createTask(title: string, listId: string) {
-    const accessToken = this.authService.getAccessToken(); // Get the access token
-    const headers = new HttpHeaders({
-      'x-access-token': accessToken || '' // Set the access token in the headers
-    });
-    return this.webReqService.post(`lists/${listId}/tasks`, { title }, { headers: headers }).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
-          // 401 error, attempt to refresh the access token
-          return this.refreshAccessToken().pipe(
-            switchMap(() => {
-              // Retry the original request with the new access token
-              const newAccessToken = this.authService.getAccessToken();
-              const newHeaders = new HttpHeaders({
-                'x-access-token': newAccessToken || ''
-              });
-              return this.webReqService.post(`lists/${listId}/tasks`, { title }, { headers: headers }).pipe(
-                catchError((err) => {
-                  console.log("Error retrying request after token refresh:", err);
-                  this.authService.logout(); // Log the user out if refresh fails
-                  return throwError(err); // Propagate the error
-                })
-              );
-            }),
-            catchError((err) => {
-              console.log("Error refreshing token:", err);
-              this.authService.logout(); // Log the user out if refresh fails
-              return throwError(err); // Propagate the error
-            })
-          );
-        }
-        return throwError(error); // Propagate other errors
-      })
+  getLists(): Observable<any> {
+    const headers = this.getHeaders();
+    return this.webReqService.get('lists', { headers }).pipe(
+      catchError(this.handleError('getLists', () => this.getLists()))
     );
   }
 
-  complete(task: any) {
-    const accessToken = this.authService.getAccessToken(); // Get the access token
-    const headers = new HttpHeaders({
-      'x-access-token': accessToken || '' // Set the access token in the headers
-    });
-    return this.webReqService.patch(`lists/${task._listId}/tasks/${task._id}`, {
-      completed: !task.completed
-    }, { headers: headers }).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
-          // 401 error, attempt to refresh the access token
-          return this.refreshAccessToken().pipe(
-            switchMap(() => {
-              // Retry the original request with the new access token
-              const newAccessToken = this.authService.getAccessToken();
-              const newHeaders = new HttpHeaders({
-                'x-access-token': newAccessToken || ''
-              });
-              return this.webReqService.patch(`lists/${task._listId}/tasks/${task._id}`, {
-                completed: !task.completed
-              }, { headers: headers }).pipe(
-                catchError((err) => {
-                  console.log("Error retrying request after token refresh:", err);
-                  this.authService.logout(); // Log the user out if refresh fails
-                  return throwError(err); // Propagate the error
-                })
-              );
-            }),
-            catchError((err) => {
-              console.log("Error refreshing token:", err);
-              this.authService.logout(); // Log the user out if refresh fails
-              return throwError(err); // Propagate the error
-            })
-          );
-        }
-        return throwError(error); // Propagate other errors
-      })
+  getTasks(listId: string): Observable<any> {
+    const headers = this.getHeaders();
+    return this.webReqService.get(`lists/${listId}/tasks`, { headers }).pipe(
+      catchError(this.handleError('getTasks', () => this.getTasks(listId)))
     );
   }
 
-  updateList(id: string, title: string) {
-    // We want to send a web request to update a list
-    const accessToken = this.authService.getAccessToken(); // Get the access token
-    const headers = new HttpHeaders({
-      'x-access-token': accessToken || '' // Set the access token in the headers
-    });
-    return this.webReqService.patch(`lists/${id}`, { title },{ headers: headers }).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
-          // 401 error, attempt to refresh the access token
-          return this.refreshAccessToken().pipe(
-            switchMap(() => {
-              // Retry the original request with the new access token
-              const newAccessToken = this.authService.getAccessToken();
-              const newHeaders = new HttpHeaders({
-                'x-access-token': newAccessToken || ''
-              });
-              return this.webReqService.patch(`lists/${id}`, { title },{ headers: headers }).pipe(
-                catchError((err) => {
-                  console.log("Error retrying request after token refresh:", err);
-                  this.authService.logout(); // Log the user out if refresh fails
-                  return throwError(err); // Propagate the error
-                })
-              );
-            }),
-            catchError((err) => {
-              console.log("Error refreshing token:", err);
-              this.authService.logout(); // Log the user out if refresh fails
-              return throwError(err); // Propagate the error
-            })
-          );
-        }
-        return throwError(error); // Propagate other errors
-      })
-    );
-
-  }
-  updateTask(listId: string, taskId: string, title: string) {
-    // We want to send a web request to update a list
-    const accessToken = this.authService.getAccessToken(); // Get the access token
-    const headers = new HttpHeaders({
-      'x-access-token': accessToken || '' // Set the access token in the headers
-    });
-    return  this.webReqService.patch(`lists/${listId}/tasks/${taskId}`, { title },{ headers: headers }).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
-          // 401 error, attempt to refresh the access token
-          return this.refreshAccessToken().pipe(
-            switchMap(() => {
-              // Retry the original request with the new access token
-              const newAccessToken = this.authService.getAccessToken();
-              const newHeaders = new HttpHeaders({
-                'x-access-token': newAccessToken || ''
-              });
-              return  this.webReqService.patch(`lists/${listId}/tasks/${taskId}`, { title },{ headers: headers }).pipe(
-                catchError((err) => {
-                  console.log("Error retrying request after token refresh:", err);
-                  this.authService.logout(); // Log the user out if refresh fails
-                  return throwError(err); // Propagate the error
-                })
-              );
-            }),
-            catchError((err) => {
-              console.log("Error refreshing token:", err);
-              this.authService.logout(); // Log the user out if refresh fails
-              return throwError(err); // Propagate the error
-            })
-          );
-        }
-        return throwError(error); // Propagate other errors
-      })
+  createTask(title: string, listId: string): Observable<any> {
+    const headers = this.getHeaders();
+    return this.webReqService.post(`lists/${listId}/tasks`, { title }, { headers }).pipe(
+      catchError(this.handleError('createTask', () => this.createTask(title, listId)))
     );
   }
-  deleteTask(listId: string, taskId: string) {
-    const accessToken = this.authService.getAccessToken(); // Get the access token
-    const headers = new HttpHeaders({
-      'x-access-token': accessToken || '' // Set the access token in the headers
-    });
-    return this.webReqService.delete(`lists/${listId}/tasks/${taskId}`,{ headers: headers }).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
-          // 401 error, attempt to refresh the access token
-          return this.refreshAccessToken().pipe(
-            switchMap(() => {
-              // Retry the original request with the new access token
-              const newAccessToken = this.authService.getAccessToken();
-              const newHeaders = new HttpHeaders({
-                'x-access-token': newAccessToken || ''
-              });
-              return this.webReqService.delete(`lists/${listId}/tasks/${taskId}` ,{ headers: headers }).pipe(
-                catchError((err) => {
-                  console.log("Error retrying request after token refresh:", err);
-                  this.authService.logout(); // Log the user out if refresh fails
-                  return throwError(err); // Propagate the error
-                })
-              );
-            }),
-            catchError((err) => {
-              console.log("Error refreshing token:", err);
-              this.authService.logout(); // Log the user out if refresh fails
-              return throwError(err); // Propagate the error
-            })
-          );
-        }
-        return throwError(error); // Propagate other errors
-      })
+
+  complete(task: any): Observable<any> {
+    const headers = this.getHeaders();
+    return this.webReqService.patch(`lists/${task._listId}/tasks/${task._id}`, { completed: !task.completed }, { headers }).pipe(
+      catchError(this.handleError('complete', () => this.complete(task)))
     );
-    
   }
 
-  deleteList(id: string) {
-    console.log("Attempting to delete list with ID:", id); // Log the ID
-    const accessToken = this.authService.getAccessToken(); // Get the access token
-    const headers = new HttpHeaders({
-        'x-access-token': accessToken || '', // Set the access token in the headers
-        '_userId': this.authService.getUserId() || ''
-    });
-
-    const url = `lists/${id}`;
-    console.log("Full URL:", url); // Log the full URL
-    console.log("Headers being sent:", headers); // Log the headers
-
-    return this.webReqService.delete(url, { headers: headers }).pipe(
-        tap(response => {
-            console.log("Delete response:", response); // Log the response
-        }),
-        catchError((error: HttpErrorResponse) => {
-            console.error("Error deleting list:", error);
-            if (error.status === 401) {
-                // 401 error, attempt to refresh the access token
-                return this.refreshAccessToken().pipe(
-                    switchMap(() => {
-                        const newAccessToken = this.authService.getAccessToken();
-                        const newHeaders = new HttpHeaders({
-                            'x-access-token': newAccessToken || '',
-                            '_userId': this.authService.getUserId() || ''
-                        });
-                        return this.webReqService.delete(url, { headers: newHeaders }).pipe(
-                            catchError((err) => {
-                                console.log("Error retrying request after token refresh:", err);
-                                this.authService.logout(); // Log the user out if refresh fails
-                                return throwError(err); // Propagate the error
-                            })
-                        );
-                    }),
-                    catchError((err) => {
-                        console.log("Error refreshing token:", err);
-                        this.authService.logout(); // Log the user out if refresh fails
-                        return throwError(err); // Propagate the error
-                    })
-                );
-            }
-            return throwError(error); // Propagate other errors
-        })
+  deleteList(id: string): Observable<any> {
+    const headers = this.getHeaders(); // Get headers with the access token
+    return this.webReqService.delete(`lists/${id}`, { headers }).pipe(
+        catchError(this.handleError('deleteList', () => this.deleteList(id))) // Handle errors
     );
 }
+
+  deleteTask(listId: string, taskId: string): Observable<any> {
+    const headers = this.getHeaders();
+    return this.webReqService.delete(`lists/${listId}/tasks/${taskId}`, { headers }).pipe(
+      catchError(this.handleError('deleteTask', () => this.deleteTask(listId, taskId)))
+    );
+  }
+
+  updateList(id: string, title: string): Observable<any> {
+    const headers = this.getHeaders();
+    return this.webReqService.patch(`lists/${id}`, { title }, { headers }).pipe(
+      catchError(this.handleError('updateList', () => this.updateList(id, title)))
+    );
+  }
+
+  updateTask(listId: string, taskId: string, title: string): Observable<any> {
+    const headers = this.getHeaders();
+    return this.webReqService.patch(`lists/${listId}/tasks/${taskId}`, { title }, { headers }).pipe(
+      catchError(this.handleError('updateTask', () => this.updateTask(listId, taskId, title)))
+    );
+  }
 }

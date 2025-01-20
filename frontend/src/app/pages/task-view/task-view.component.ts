@@ -13,14 +13,14 @@ export class TaskViewComponent implements OnInit {
 
   lists: any[] = [];
   tasks: any[] = [];
-  currentListId: string | null = null; // Track the current list ID
+  currentListId: string | null = null; 
   selectedListId: string = '';
 
   constructor(private taskService: TaskService, private route: ActivatedRoute, private router: Router) { }
 
   ngOnInit() {
     this.route.params.subscribe((params: Params) => {
-      this.currentListId = params['listId'] || null; // Set currentListId based on route params
+      this.currentListId = params['listId'] || null; 
       if (this.currentListId) {
         this.selectedListId = this.currentListId;
         this.taskService.getTasks(this.currentListId).subscribe(
@@ -32,7 +32,7 @@ export class TaskViewComponent implements OnInit {
           }
         );
       } else {
-        this.tasks = []; // Reset tasks if no listId
+        this.tasks = []; 
       }
     });
 

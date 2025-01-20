@@ -13,7 +13,7 @@ export class WebRequestService {
   }
 
   get(uri: string, options?: { headers?: HttpHeaders }) {
-    return this.http.get(`${this.ROOT_URL}/${uri}`, options); // Use options for headers
+    return this.http.get(`${this.ROOT_URL}/${uri}`, options); 
   }
 
   post(uri: string, payload: Object, options?: { headers?: HttpHeaders }) {
