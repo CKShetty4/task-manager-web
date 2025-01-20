@@ -248,8 +248,78 @@ export class TaskService {
     );
 
   }
-
- 
+  updateTask(listId: string, taskId: string, title: string) {
+    // We want to send a web request to update a list
+    const accessToken = this.authService.getAccessToken(); // Get the access token
+    const headers = new HttpHeaders({
+      'x-access-token': accessToken || '' // Set the access token in the headers
+    });
+    return  this.webReqService.patch(`lists/${listId}/tasks/${taskId}`, { title },{ headers: headers }).pipe(
+      catchError((error: HttpErrorResponse) => {
+        if (error.status === 401) {
+          // 401 error, attempt to refresh the access token
+          return this.refreshAccessToken().pipe(
+            switchMap(() => {
+              // Retry the original request with the new access token
+              const newAccessToken = this.authService.getAccessToken();
+              const newHeaders = new HttpHeaders({
+                'x-access-token': newAccessToken || ''
+              });
+              return  this.webReqService.patch(`lists/${listId}/tasks/${taskId}`, { title },{ headers: headers }).pipe(
+                catchError((err) => {
+                  console.log("Error retrying request after token refresh:", err);
+                  this.authService.logout(); // Log the user out if refresh fails
+                  return throwError(err); // Propagate the error
+                })
+              );
+            }),
+            catchError((err) => {
+              console.log("Error refreshing token:", err);
+              this.authService.logout(); // Log the user out if refresh fails
+              return throwError(err); // Propagate the error
+            })
+          );
+        }
+        return throwError(error); // Propagate other errors
+      })
+    );
+  }
+  deleteTask(listId: string, taskId: string) {
+    const accessToken = this.authService.getAccessToken(); // Get the access token
+    const headers = new HttpHeaders({
+      'x-access-token': accessToken || '' // Set the access token in the headers
+    });
+    return this.webReqService.delete(`lists/${listId}/tasks/${taskId}`,{ headers: headers }).pipe(
+      catchError((error: HttpErrorResponse) => {
+        if (error.status === 401) {
+          // 401 error, attempt to refresh the access token
+          return this.refreshAccessToken().pipe(
+            switchMap(() => {
+              // Retry the original request with the new access token
+              const newAccessToken = this.authService.getAccessToken();
+              const newHeaders = new HttpHeaders({
+                'x-access-token': newAccessToken || ''
+              });
+              return this.webReqService.delete(`lists/${listId}/tasks/${taskId}` ,{ headers: headers }).pipe(
+                catchError((err) => {
+                  console.log("Error retrying request after token refresh:", err);
+                  this.authService.logout(); // Log the user out if refresh fails
+                  return throwError(err); // Propagate the error
+                })
+              );
+            }),
+            catchError((err) => {
+              console.log("Error refreshing token:", err);
+              this.authService.logout(); // Log the user out if refresh fails
+              return throwError(err); // Propagate the error
+            })
+          );
+        }
+        return throwError(error); // Propagate other errors
+      })
+    );
+    
+  }
 
   deleteList(id: string) {
     console.log("Attempting to delete list with ID:", id); // Log the ID

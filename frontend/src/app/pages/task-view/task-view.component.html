@@ -43,7 +43,24 @@
                 <div *ngIf="tasks && tasks.length > 0; else noTasks">
                     <div class="list-menu">
                         <div class="task" *ngFor="let task of tasks" (click)="onTaskClick(task)" [ngClass]="{ 'completed': task.completed }">
-                            <p>{{ task.title }}</p>
+                            <div class="task-text">
+                                <p>{{ task.title }}</p>
+                              </div>
+                              <div class="task-buttons">
+                    
+                                <button class="button" (click)="onEditTaskClick(task._id)">
+                                  <div class="icon">
+                                    <i class="fas fa-edit"></i>
+                                  </div>
+                                </button>
+                    
+                                <button class="button is-danger" (click)="onDeleteTaskClick(task._id)" style="margin-left: 10px;">
+                                  <div class="icon">
+                                    <i class="fas fa-trash"></i>
+                                  </div>
+                                </button>
+                    
+                              </div>
                         </div>
                     </div>
                     <button class="circle-add-button button is-primary" (click)="navigateToTask(currentListId)">

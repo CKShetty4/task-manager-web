@@ -267,33 +267,40 @@ app.patch('/lists/:listId/tasks/:taskId', authenticate, (req, res) => {
  * Purpose: Delete a task
  */
 app.delete('/lists/:listId/tasks/:taskId', authenticate, (req, res) => {
-
-    TList.findOne({
+    List.findOne({
         _id: req.params.listId,
         _userId: req.user_id
     }).then((list) => {
         if (list) {
-            // list object with the specified conditions was found
-            // therefore the currently authenticated user can make updates to tasks within this list
+            // List object with the specified conditions was found
+            // therefore the currently authenticated user can delete tasks within this list
             return true;
         }
 
         // else - the list object is undefined
         return false;
     }).then((canDeleteTasks) => {
-        
         if (canDeleteTasks) {
-            Task.findOneAndRemove({
+            Task.findOneAndDelete({
                 _id: req.params.taskId,
                 _listId: req.params.listId
             }).then((removedTaskDoc) => {
-                res.send(removedTaskDoc);
-            })
+                if (removedTaskDoc) {
+                    res.send(removedTaskDoc); // Successfully deleted
+                } else {
+                    res.status(404).send({ error: "Task not found." }); // Task not found
+                }
+            }).catch((err) => {
+                console.error("Error deleting task:", err);
+                res.status(500).send({ error: "An error occurred while deleting the task." });
+            });
         } else {
-            res.sendStatus(404);
+            res.sendStatus(404); // List not found
         }
+    }).catch((err) => {
+        console.error("Error finding list:", err);
+        res.status(500).send({ error: "An error occurred while finding the list." });
     });
-
 });
 /* USER ROUTES */
 
