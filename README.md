@@ -2,6 +2,8 @@
 
 This is a task management web application built with the MEAN stack (MongoDB, Express, Angular, Node.js). It allows users to sign up, log in, create task lists, and manage tasks in a user-friendly interface.
 
+![Overview of Task Manager](./screenshot/Overview.png)
+
 ## Features
 
 - **User Authentication**: 
@@ -45,7 +47,7 @@ This is a task management web application built with the MEAN stack (MongoDB, Ex
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/task-manager-app.git
+   git clone https://github.com/CKShetty4/task-manager-web.git
    cd task-manager-app
    ```
 
